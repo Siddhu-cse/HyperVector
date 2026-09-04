@@ -31,8 +31,8 @@ class alignas(kCacheLineBytes) IdentityNode {
         features_{std::move(features)},
         adjacency_{std::move(adjacency)} {}
 
-  IdentityNode(const IdentityNode&)                = default;  // may allocate
-  IdentityNode& operator=(const IdentityNode&)     = default;  // may allocate
+  IdentityNode(const IdentityNode&)                = default;
+  IdentityNode& operator=(const IdentityNode&)     = default;
   IdentityNode(IdentityNode&&) noexcept            = default;
   IdentityNode& operator=(IdentityNode&&) noexcept = default;
   ~IdentityNode()                                  = default;
@@ -44,12 +44,9 @@ class alignas(kCacheLineBytes) IdentityNode {
     return metadata_;
   }
 
-
   void set_metadata(std::string value) noexcept {
     metadata_ = std::move(value);
   }
-
-  // Feature vector 
 
   [[nodiscard]] const FeatureVector& features() const noexcept {
     return features_;
@@ -63,8 +60,6 @@ class alignas(kCacheLineBytes) IdentityNode {
     return features_.size();
   }
 
-  // Multilayer adjacency 
-
   [[nodiscard]] const AdjacencyGraph& adjacency() const noexcept {
     return adjacency_;
   }
@@ -76,7 +71,6 @@ class alignas(kCacheLineBytes) IdentityNode {
   [[nodiscard]] std::size_t layer_count() const noexcept {
     return adjacency_.size();
   }
-
 
   [[nodiscard]] const AdjacencyLayer& neighbors(std::size_t layer) const
       noexcept {
@@ -98,7 +92,6 @@ class alignas(kCacheLineBytes) IdentityNode {
   AdjacencyGraph adjacency_{};
 };
 
-/// ADL-friendly free swap.
 inline void swap(IdentityNode& lhs, IdentityNode& rhs) noexcept {
   lhs.swap(rhs);
 }

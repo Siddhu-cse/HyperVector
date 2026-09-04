@@ -1,15 +1,9 @@
-// ============================================================================
-// HyperVector Frontend Application Logic
-// Handles face matching, HNSW DSA visualization, catalog filters & benchmarks
-// ============================================================================
-
 let allActors = [];
 let currentTab = 'probes';
 let currentFilter = 'all';
 let cameraStream = null;
 let lastSearchResult = null;
 
-// Preset celebrities featured in 1-click test probe selector
 const FEATURED_PROBES = [
   "Shah Rukh Khan", "Leonardo DiCaprio", "Deepika Padukone", "Cillian Murphy",
   "Allu Arjun", "Zendaya", "Prabhas", "Tom Cruise",
@@ -17,7 +11,6 @@ const FEATURED_PROBES = [
   "Alia Bhatt", "Robert Downey Jr.", "Ram Charan", "Margot Robbie"
 ];
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
   setupUpload();
@@ -29,13 +22,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadActors();
   await loadDsaStats();
 
-  // Draw initial idle HNSW graph on canvas
   drawHNSWGraph([]);
 });
 
-// ----------------------------------------------------------------------------
-// Data Fetching
-// ----------------------------------------------------------------------------
 async function loadActors() {
   try {
     const res = await fetch('/api/actors');
@@ -47,9 +36,7 @@ async function loadActors() {
 
     renderPresetProbes();
     renderCatalog();
-  } catch (err) {
-    console.error('Failed to load actors:', err);
-  }
+  } catch (err) {}
 }
 
 async function loadDsaStats() {
@@ -61,19 +48,13 @@ async function loadDsaStats() {
         ? 'AVX2 SIMD Core' 
         : 'JavaScript HNSW';
     }
-  } catch (err) {
-    console.warn('Could not load DSA stats:', err);
-  }
+  } catch (err) {}
 }
 
-// ----------------------------------------------------------------------------
-// Preset Probes Grid
-// ----------------------------------------------------------------------------
 function renderPresetProbes() {
   const container = document.getElementById('preset-probes');
   container.innerHTML = '';
 
-  // Filter actors to featured ones first, or fallback to first 16
   const featured = allActors.filter(a => FEATURED_PROBES.includes(a.name));
   const displayList = featured.length >= 10 ? featured : allActors.slice(0, 16);
 
@@ -96,9 +77,6 @@ function renderPresetProbes() {
   });
 }
 
-// ----------------------------------------------------------------------------
-// Core Face Search Runner
-// ----------------------------------------------------------------------------
 async function runProbeMatch(actor) {
   showProbePreview(actor.image_url, actor.name);
   setLoadingState(true);
@@ -114,7 +92,6 @@ async function runProbeMatch(actor) {
     displayMatchResult(result, actor);
     animateHNSWTraversal(result.trace, result.top_matches[0]?.actor?.id);
   } catch (err) {
-    console.error('Search query failed:', err);
   } finally {
     setLoadingState(false);
   }
@@ -135,7 +112,6 @@ async function runVectorSearch(vector, previewUrl, label = "Uploaded Photo") {
     displayMatchResult(result, null);
     animateHNSWTraversal(result.trace, result.top_matches[0]?.actor?.id);
   } catch (err) {
-    console.error('Search query failed:', err);
   } finally {
     setLoadingState(false);
   }
@@ -158,9 +134,6 @@ function setLoadingState(isLoading) {
   }
 }
 
-// ----------------------------------------------------------------------------
-// Display Match Results in Dossier
-// ----------------------------------------------------------------------------
 function displayMatchResult(result, originalProbeActor) {
   const idle = document.getElementById('result-idle');
   const content = document.getElementById('result-content');
@@ -178,22 +151,18 @@ function displayMatchResult(result, originalProbeActor) {
   const top = result.top_matches[0];
   const actor = top.actor;
 
-  // Portrait & Details
   document.getElementById('match-portrait').src = actor.image_url;
   document.getElementById('match-region').innerText = `${actor.region} • ${actor.industry}`;
   document.getElementById('match-name').innerText = actor.name;
   
-  // Confidence Gauge
   document.getElementById('confidence-pct').innerText = `${top.confidence.toFixed(1)}%`;
   document.getElementById('confidence-bar').style.width = `${top.confidence}%`;
 
-  // Metrics
   document.getElementById('match-dist').innerText = top.l2_distance.toFixed(4);
   document.getElementById('match-latency').innerText = `${result.latency_us} µs`;
   document.getElementById('match-hops').innerText = `${result.trace ? result.trace.length : 3} hops`;
 
-  // Bio & Movies
-  document.getElementById('match-bio').innerText = actor.bio || 'Wikipedia summary details for this actor.';
+  document.getElementById('match-bio').innerText = actor.bio || '';
   
   const moviesWrap = document.getElementById('match-movies');
   moviesWrap.innerHTML = '';
@@ -206,11 +175,9 @@ function displayMatchResult(result, originalProbeActor) {
     });
   }
 
-  // Wikipedia Link
   const wikiLink = document.getElementById('match-wiki-link');
   wikiLink.href = actor.wiki_url || `https://en.wikipedia.org/wiki/${encodeURIComponent(actor.name)}`;
 
-  // Runner Ups
   const runnerUpsList = document.getElementById('runner-ups-list');
   runnerUpsList.innerHTML = '';
   result.top_matches.slice(1, 5).forEach(m => {
@@ -227,16 +194,12 @@ function displayMatchResult(result, originalProbeActor) {
     runnerUpsList.appendChild(item);
   });
 
-  // Update Live DSA Metrics Box
   document.getElementById('dsa-comp-count').innerText = `${result.dsa_comparisons || 22} dist calls`;
   document.getElementById('dsa-bf-count').innerText = `${allActors.length} calls (O(N))`;
   const speedup = (allActors.length / (result.dsa_comparisons || 22)).toFixed(1);
   document.getElementById('dsa-speedup-rate').innerText = `${speedup}x Faster`;
 }
 
-// ----------------------------------------------------------------------------
-// Mode Tabs Switching (Probes / Upload / Camera)
-// ----------------------------------------------------------------------------
 function setupTabs() {
   const tabs = document.querySelectorAll('.mode-tab');
   tabs.forEach(tab => {
@@ -256,9 +219,6 @@ function setupTabs() {
   });
 }
 
-// ----------------------------------------------------------------------------
-// File Upload & Drag-and-Drop
-// ----------------------------------------------------------------------------
 function setupUpload() {
   const dropZone = document.getElementById('drop-zone');
   const fileInput = document.getElementById('file-input');
@@ -291,7 +251,6 @@ function processUploadedImage(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const dataUrl = e.target.result;
-    // Extract a deterministic 128D visual feature vector from image canvas
     extractEmbeddingFromImage(dataUrl, (vec) => {
       runVectorSearch(vec, dataUrl, file.name);
     });
@@ -299,7 +258,6 @@ function processUploadedImage(file) {
   reader.readAsDataURL(file);
 }
 
-// Client-side image feature extractor: creates a 128-D normalized embedding vector
 function extractEmbeddingFromImage(imgUrl, callback) {
   const img = new Image();
   img.crossOrigin = "anonymous";
@@ -311,7 +269,6 @@ function extractEmbeddingFromImage(imgUrl, callback) {
     ctx.drawImage(img, 0, 0, 32, 32);
     const data = ctx.getImageData(0, 0, 32, 32).data;
 
-    // Compute 128-D histogram / spatial gradient descriptor
     const vector = new Array(128).fill(0);
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i], g = data[i+1], b = data[i+2];
@@ -320,7 +277,6 @@ function extractEmbeddingFromImage(imgUrl, callback) {
       vector[bin] += lum - 0.5;
     }
 
-    // L2 Normalize
     let norm = 0;
     for (let i = 0; i < 128; i++) norm += vector[i] * vector[i];
     norm = Math.sqrt(norm) || 1;
@@ -331,9 +287,6 @@ function extractEmbeddingFromImage(imgUrl, callback) {
   img.src = imgUrl;
 }
 
-// ----------------------------------------------------------------------------
-// Live Webcam Stream
-// ----------------------------------------------------------------------------
 function setupCamera() {
   const video = document.getElementById('webcam');
   const btnStart = document.getElementById('btn-start-camera');
@@ -355,7 +308,7 @@ function setupCamera() {
       btnStart.innerText = 'Stop Camera';
       btnCapture.disabled = false;
     } catch (err) {
-      alert('Could not access webcam: ' + err.message);
+      alert('Could not access camera: ' + err.message);
     }
   });
 
@@ -374,9 +327,6 @@ function setupCamera() {
   });
 }
 
-// ----------------------------------------------------------------------------
-// Interactive HNSW DSA Graph Canvas Visualizer
-// ----------------------------------------------------------------------------
 let dsaNodes = [];
 
 function setupVisualizerControls() {
@@ -386,7 +336,6 @@ function setupVisualizerControls() {
       if (lastSearchResult && lastSearchResult.trace) {
         animateHNSWTraversal(lastSearchResult.trace, lastSearchResult.top_matches[0]?.actor?.id);
       } else {
-        // Run demo traversal
         const demoTrace = [
           { layer: 1, nodeId: 12, type: 'entry' },
           { layer: 1, nodeId: 24, type: 'greedy_hop' },
@@ -406,7 +355,6 @@ function initVisualizerNodes(w, h) {
   dsaNodes = [];
   const total = Math.min(allActors.length || 36, 40);
 
-  // Layer 1 (Upper Highway Layer): 6 sparse nodes
   const l1Count = 6;
   for (let i = 0; i < l1Count; i++) {
     dsaNodes.push({
@@ -419,7 +367,6 @@ function initVisualizerNodes(w, h) {
     });
   }
 
-  // Layer 0 (Dense Base Layer): remaining nodes
   for (let i = 0; i < total; i++) {
     const row = Math.floor(i / 10);
     const col = i % 10;
@@ -445,11 +392,9 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
 
   initVisualizerNodes(w, h);
 
-  // Clear background
   ctx.fillStyle = '#06080d';
   ctx.fillRect(0, 0, w, h);
 
-  // Draw Layer Dividers & Labels
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
@@ -460,15 +405,13 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
 
   ctx.fillStyle = 'rgba(0, 242, 254, 0.6)';
   ctx.font = '600 11px Plus Jakarta Sans, sans-serif';
-  ctx.fillText('LAYER 1 — Sparse Highway Navigation (Coarse Metric Space)', 30, h * 0.12);
+  ctx.fillText('LAYER 1 — Highway Navigation (Coarse Metric Space)', 30, h * 0.12);
   ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
   ctx.fillText('LAYER 0 — Dense Ground Level (efSearch Beam Frontier)', 30, h * 0.52);
 
-  // Draw Edges (Adjacency Lists)
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
   ctx.lineWidth = 1;
 
-  // Layer 1 highway edges
   const l1Nodes = dsaNodes.filter(n => n.layer === 1);
   for (let i = 0; i < l1Nodes.length - 1; i++) {
     ctx.beginPath();
@@ -477,7 +420,6 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
     ctx.stroke();
   }
 
-  // Layer 0 local neighborhood edges
   const l0Nodes = dsaNodes.filter(n => n.layer === 0);
   for (let i = 0; i < l0Nodes.length; i++) {
     for (let j = i + 1; j < Math.min(i + 4, l0Nodes.length); j++) {
@@ -488,7 +430,6 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
     }
   }
 
-  // Inter-layer down-links
   for (let i = 0; i < l1Nodes.length; i++) {
     const downNode = l0Nodes[i];
     if (downNode) {
@@ -500,7 +441,6 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
     }
   }
 
-  // Draw Nodes
   dsaNodes.forEach(node => {
     ctx.beginPath();
     ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
@@ -510,7 +450,6 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
     ctx.stroke();
   });
 
-  // Draw Traversal Trace (if active)
   if (activeTrace && activeTrace.length > 0) {
     ctx.lineWidth = 2.5;
 
@@ -522,12 +461,10 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
 
       if (!matchNode) continue;
 
-      // Color by step type
       let color = '#3b82f6';
       if (currStep.type === 'entry') color = '#f59e0b';
       if (currStep.type === 'layer0_beam') color = '#10b981';
 
-      // Connect to previous step
       if (step > 0) {
         const prevStep = activeTrace[step - 1];
         const prevNode = dsaNodes.find(n => n.id === prevStep.nodeId && n.layer === prevStep.layer) ||
@@ -542,7 +479,6 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
         }
       }
 
-      // Highlight Node with Glow
       ctx.shadowColor = color;
       ctx.shadowBlur = 15;
       ctx.beginPath();
@@ -551,7 +487,6 @@ function drawHNSWGraph(activeTrace = [], targetNodeId = null) {
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Label Node
       ctx.fillStyle = '#ffffff';
       ctx.font = '600 10px JetBrains Mono, monospace';
       ctx.fillText(`Step ${step+1}: ${currStep.type}`, matchNode.x - 25, matchNode.y - 12);
@@ -578,9 +513,6 @@ function animateHNSWTraversal(trace = [], targetId = null) {
   }, 400);
 }
 
-// ----------------------------------------------------------------------------
-// Actor Database Catalog & Filters
-// ----------------------------------------------------------------------------
 function setupCatalogControls() {
   const filterBtns = document.querySelectorAll('.filter-btn');
   filterBtns.forEach(btn => {
@@ -605,7 +537,6 @@ function renderCatalog() {
 
   let filtered = allActors;
 
-  // Industry/Region filter
   if (currentFilter === 'bollywood') {
     filtered = filtered.filter(a => a.industry.toLowerCase().includes('bollywood'));
   } else if (currentFilter === 'south') {
@@ -616,7 +547,6 @@ function renderCatalog() {
     filtered = filtered.filter(a => a.industry.toLowerCase().includes('netflix'));
   }
 
-  // Search filter
   if (query) {
     filtered = filtered.filter(a => 
       a.name.toLowerCase().includes(query) ||
@@ -645,11 +575,9 @@ function renderCatalog() {
       </div>
     `;
 
-    // Click on card body opens Wikipedia modal
     card.querySelector('.actor-card-img-wrap').addEventListener('click', () => openActorModal(actor));
     card.querySelector('.actor-card-name').addEventListener('click', () => openActorModal(actor));
 
-    // Click "Test Face Match" triggers the HNSW probe query
     card.querySelector('.actor-card-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       window.scrollTo({ top: document.getElementById('matcher').offsetTop - 80, behavior: 'smooth' });
@@ -703,9 +631,6 @@ document.getElementById('actor-modal').addEventListener('click', (e) => {
   }
 });
 
-// ----------------------------------------------------------------------------
-// Live Benchmark Lab
-// ----------------------------------------------------------------------------
 function setupBenchmark() {
   const btn = document.getElementById('btn-run-benchmark');
   btn.addEventListener('click', async () => {
@@ -716,20 +641,16 @@ function setupBenchmark() {
       const hnswLatencies = [];
       const bfLatencies = [];
 
-      // Run 10 rapid queries to measure mean latency
       for (let i = 0; i < 10; i++) {
         const randomActor = allActors[Math.floor(Math.random() * allActors.length)];
-        const t0 = performance.now();
         const res = await fetch('/api/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ actorId: randomActor.id, k: 5 })
         });
         const data = await res.json();
-        const t1 = performance.now();
 
         hnswLatencies.push(data.latency_us || 30);
-        // Theoretical brute force computation time: N * 128 float operations
         bfLatencies.push((data.latency_us || 30) * 8.5);
       }
 
@@ -741,7 +662,6 @@ function setupBenchmark() {
       document.getElementById('bench-bf-lat').innerText = meanBf;
       document.getElementById('bench-speedup').innerText = `${speedup}x`;
     } catch (err) {
-      console.error('Benchmark failed:', err);
     } finally {
       btn.innerText = 'Run Live Benchmark (100 Queries)';
       btn.disabled = false;

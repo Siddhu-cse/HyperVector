@@ -1,6 +1,3 @@
-// ============================================================================
-// HyperVector Query CLI - Native C++ HNSW Vector Search
-// ============================================================================
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -10,13 +7,11 @@
 
 #include "hnsw_index.h"
 
-// Simple parser for float vectors from comma/space separated strings
 std::vector<float> ParseVector(const std::string& str) {
   std::vector<float> vec;
   std::stringstream ss(str);
   std::string item;
   while (std::getline(ss, item, ',')) {
-    // trim whitespace
     size_t start = item.find_first_not_of(" \t\r\n[");
     size_t end = item.find_last_not_of(" \t\r\n]");
     if (start != std::string::npos && end != std::string::npos) {
@@ -29,15 +24,11 @@ std::vector<float> ParseVector(const std::string& str) {
 }
 
 int main(int argc, char* argv[]) {
-  // If run with --demo or no arguments, print usage
   if (argc < 2) {
     std::cout << "{\"status\":\"ok\",\"engine\":\"HyperVector C++20 HNSW with AVX2 SIMD\"}\n";
     return 0;
   }
 
-  // Load embeddings from a simple format or test
-  // argv[1]: query vector string (comma-separated 128 floats)
-  // argv[2]: top_k (default 5)
   std::string query_str = argv[1];
   std::size_t top_k = (argc >= 3) ? std::stoul(argv[2]) : 5;
 
@@ -47,7 +38,6 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  // Read actor embeddings from data/actors.json or stdin
   std::ifstream f("data/actors.json");
   if (!f.is_open()) {
     f.open("../data/actors.json");

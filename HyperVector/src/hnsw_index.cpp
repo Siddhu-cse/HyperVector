@@ -11,7 +11,6 @@
 namespace fig::core {
 namespace {
 
-/// Linear membership test over a (small, degree-bounded) adjacency list.
 [[nodiscard]] bool ContainsId(const std::vector<std::uint32_t>& list,
                               std::uint32_t value) noexcept {
   for (const std::uint32_t entry : list) {
@@ -22,7 +21,7 @@ namespace {
   return false;
 }
 
-}  // namespace
+}
 
 HNSWIndex::HNSWIndex(std::size_t M, std::uint64_t seed)
     : nodes_{},
@@ -44,7 +43,7 @@ int HNSWIndex::RandomLevel() noexcept {
 }
 
 float HNSWIndex::NodeDistance(const std::vector<float>& query,
-                              std::uint64_t id) const noexcept {
+                                 std::uint64_t id) const noexcept {
   const auto it = nodes_.find(id);
   if (it == nodes_.end()) {
     return std::numeric_limits<float>::infinity();
@@ -89,7 +88,6 @@ std::vector<HNSWIndex::Candidate> HNSWIndex::SearchLayer(
     const std::vector<std::uint64_t>& entry_points,
     std::size_t ef,
     int layer) const {
-  // Min-heap on the exploration frontier: top() is the closest unexpanded node.
   const auto closer_first = [](const Candidate& a, const Candidate& b) noexcept {
     return a.distance > b.distance;
   };
@@ -126,7 +124,7 @@ std::vector<HNSWIndex::Candidate> HNSWIndex::SearchLayer(
     frontier.pop();
 
     if (!results.empty() && nearest.distance > results.top().distance) {
-      break;  // No remaining frontier node can improve the result set.
+      break;
     }
 
     const auto it = nodes_.find(nearest.id);
@@ -295,7 +293,6 @@ void HNSWIndex::InsertProfile(std::uint64_t id,
     return;
   }
 
-  // First node bootstraps the graph as the entry point.
   if (nodes_.size() == 1) {
     enter_node_id_ = id;
     max_level_ = node_level;
@@ -305,12 +302,10 @@ void HNSWIndex::InsertProfile(std::uint64_t id,
   const int top = max_level_;
   std::uint64_t entry = enter_node_id_;
 
-  // Phase A — top-down greedy routing through layers above the new node.
   for (int layer = top; layer > node_level; --layer) {
     entry = GreedyClosest(features, entry, layer);
   }
 
-  // Phase B — interconnect from the highest shared layer down to layer 0.
   const int start_layer = std::min(node_level, top);
   std::vector<std::uint64_t> entry_points{entry};
 
@@ -331,7 +326,6 @@ void HNSWIndex::InsertProfile(std::uint64_t id,
     }
   }
 
-  // Promote the new node to global entry point if it raised the ceiling.
   if (node_level > max_level_) {
     max_level_ = node_level;
     enter_node_id_ = id;
@@ -349,12 +343,10 @@ std::vector<std::uint64_t> HNSWIndex::SearchKNN(
   try {
     std::uint64_t entry = enter_node_id_;
 
-    // Greedy descent from the top layer down to layer 1.
     for (int layer = max_level_; layer > 0; --layer) {
       entry = GreedyClosest(query_vector, entry, layer);
     }
 
-    // Exhaustive beam search on layer 0 with an enlarged candidate window.
     const std::size_t ef = std::max(k, kEfSearch);
     std::vector<Candidate> found = SearchLayer(
         query_vector, std::vector<std::uint64_t>{entry}, ef, 0);
@@ -377,4 +369,4 @@ std::vector<std::uint64_t> HNSWIndex::SearchKNN(
   return result;
 }
 
-} 
+}
