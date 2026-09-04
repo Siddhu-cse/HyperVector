@@ -25,7 +25,7 @@ std::vector<float> ParseVector(const std::string& str) {
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cout << "{\"status\":\"ok\",\"engine\":\"HyperVector C++20 HNSW with AVX2 SIMD\"}\n";
+    std::cout << "{\"status\":\"ok\"}\n";
     return 0;
   }
 
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
 
   std::vector<float> query = ParseVector(query_str);
   if (query.empty()) {
-    std::cerr << "{\"error\":\"Empty or invalid query vector\"}\n";
+    std::cerr << "{\"error\":\"Empty query vector\"}\n";
     return 1;
   }
 
@@ -47,42 +47,37 @@ int main(int argc, char* argv[]) {
 
   if (f.is_open()) {
     std::string line;
-    uint64_t current_id = 0;
-    std::string current_name = "";
-    std::vector<float> current_vec;
-    bool in_embedding = false;
-
     while (std::getline(f, line)) {
-      if (line.find("\"id\":") != std::string::npos) {
-        size_t colon = line.find(':');
-        size_t comma = line.find(',', colon);
-        if (colon != std::string::npos) {
-          current_id = std::stoull(line.substr(colon + 1, comma - colon - 1));
+      size_t id_pos = line.find("\"id\":");
+      size_t name_pos = line.find("\"name\":");
+      size_t emb_pos = line.find("\"embedding\":[");
+      if (emb_pos == std::string::npos) {
+        emb_pos = line.find("\"embedding\": [");
+      }
+
+      if (id_pos != std::string::npos && emb_pos != std::string::npos) {
+        uint64_t id = 0;
+        size_t comma = line.find(',', id_pos);
+        if (comma != std::string::npos) {
+          id = std::stoull(line.substr(id_pos + 5, comma - id_pos - 5));
         }
-      } else if (line.find("\"name\":") != std::string::npos) {
-        size_t first = line.find('"');
-        first = line.find('"', first + 1);
-        first = line.find('"', first + 1);
-        size_t last = line.find('"', first + 1);
-        if (first != std::string::npos && last != std::string::npos) {
-          current_name = line.substr(first + 1, last - first - 1);
-        }
-      } else if (line.find("\"embedding\": [") != std::string::npos) {
-        in_embedding = true;
-        current_vec.clear();
-      } else if (in_embedding) {
-        if (line.find("]") != std::string::npos) {
-          in_embedding = false;
-          if (!current_vec.empty() && current_id > 0) {
-            index.InsertProfile(current_id, current_name, current_vec);
+
+        std::string name = "";
+        if (name_pos != std::string::npos) {
+          size_t q1 = line.find('"', name_pos + 7);
+          size_t q2 = line.find('"', q1 + 1);
+          if (q1 != std::string::npos && q2 != std::string::npos) {
+            name = line.substr(q1 + 1, q2 - q1 - 1);
           }
-        } else {
-          size_t start = line.find_first_not_of(" \t\r\n,");
-          size_t end = line.find_last_not_of(" \t\r\n,");
-          if (start != std::string::npos && end != std::string::npos) {
-            try {
-              current_vec.push_back(std::stof(line.substr(start, end - start + 1)));
-            } catch (...) {}
+        }
+
+        size_t bracket_start = line.find('[', emb_pos);
+        size_t bracket_end = line.find(']', bracket_start);
+        if (bracket_start != std::string::npos && bracket_end != std::string::npos) {
+          std::string vec_str = line.substr(bracket_start + 1, bracket_end - bracket_start - 1);
+          std::vector<float> vec = ParseVector(vec_str);
+          if (!vec.empty() && id > 0) {
+            index.InsertProfile(id, name, vec);
           }
         }
       }
