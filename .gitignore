@@ -1,0 +1,17 @@
+# Build directories and outputs
+build/
+HyperVector/build/
+*.obj
+*.o
+*.a
+*.lib
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+
+# System & IDE files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

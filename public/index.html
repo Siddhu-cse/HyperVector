@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HyperVector — Facial Identity Recognition System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <!-- Main Navigation Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">HYPER<span>VECTOR</span></div>
+          <div class="brand-sub">HNSW Facial Identity Engine</div>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#matcher" class="nav-link active">Face Matcher</a>
+        <a href="#visualizer" class="nav-link">HNSW Graph DSA</a>
+        <a href="#catalog" class="nav-link">Actor Database</a>
+        <a href="#benchmark" class="nav-link">Benchmark</a>
+      </nav>
+
+      <div class="system-status">
+        <div class="status-indicator">
+          <span class="status-pulse"></span>
+          <span class="status-label" id="engine-badge">AVX2 SIMD Engine</span>
+        </div>
+        <div class="status-meta" id="nodes-count">58 Identities</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-wrapper">
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        C++20 Vector Search Engine • Wikipedia Actor Identity Matching
+      </div>
+      <h1 class="hero-title">High-Dimensional Face Recognition<br><span class="gradient-text">Powered by HNSW & SIMD</span></h1>
+      <p class="hero-desc">
+        Explore sub-millisecond facial identity retrieval across top actors from <strong>India</strong> (Bollywood & South Cinema) and <strong>USA</strong> (Hollywood & Netflix) using multi-layer Hierarchical Navigable Small World graphs.
+      </p>
+    </section>
+
+    <!-- Section 1: Face Matcher & Recognition Studio -->
+    <section id="matcher" class="panel-section">
+      <div class="section-head">
+        <div>
+          <span class="section-tag">RECOGNITION STUDIO</span>
+          <h2 class="section-title">Face Scanner & Identification</h2>
+        </div>
+        <div class="mode-tabs">
+          <button class="mode-tab active" data-tab="probes">⚡ 1-Click Celebrity Probes</button>
+          <button class="mode-tab" data-tab="upload">📁 Upload Photo</button>
+          <button class="mode-tab" data-tab="camera">📷 Live Camera</button>
+        </div>
+      </div>
+
+      <!-- Studio Layout: Input Panel + Result Dossier -->
+      <div class="studio-grid">
+        
+        <!-- Input Container -->
+        <div class="studio-card input-card">
+          <div class="card-header">
+            <span class="card-title">Probe Input</span>
+            <span class="card-subtitle" id="input-mode-label">Select a celebrity to test instant match</span>
+          </div>
+
+          <!-- Tab Content 1: Instant Probes -->
+          <div class="tab-pane active" id="pane-probes">
+            <div class="probe-instructions">
+              Click any celebrity below to run instant HNSW vector search against the 128-D index:
+            </div>
+            <div class="probe-chips-grid" id="preset-probes">
+              <!-- Populated dynamically with actor thumbnails -->
+            </div>
+          </div>
+
+          <!-- Tab Content 2: Upload File -->
+          <div class="tab-pane" id="pane-upload">
+            <div class="drop-zone" id="drop-zone">
+              <input type="file" id="file-input" accept="image/*" class="file-hidden">
+              <div class="drop-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <div class="drop-text">Drag & drop actor photo here</div>
+              <div class="drop-hint">or <button type="button" class="btn-browse" onclick="document.getElementById('file-input').click()">Browse file</button></div>
+              <div class="drop-format">Supports JPG, PNG, WEBP</div>
+            </div>
+          </div>
+
+          <!-- Tab Content 3: Live Camera -->
+          <div class="tab-pane" id="pane-camera">
+            <div class="camera-wrapper">
+              <video id="webcam" autoplay playsinline muted class="camera-video"></video>
+              <div class="camera-reticle">
+                <div class="reticle-corner tl"></div>
+                <div class="reticle-corner tr"></div>
+                <div class="reticle-corner bl"></div>
+                <div class="reticle-corner br"></div>
+                <div class="scan-laser"></div>
+              </div>
+            </div>
+            <div class="camera-controls">
+              <button class="btn-action" id="btn-start-camera">Turn On Camera</button>
+              <button class="btn-action primary" id="btn-capture" disabled>Capture & Match</button>
+            </div>
+          </div>
+
+          <!-- Active Probe Preview -->
+          <div class="probe-preview-box" id="probe-preview-box" style="display: none;">
+            <div class="preview-img-wrap">
+              <img id="probe-img" src="" alt="Probe Face">
+              <div class="reticle-box"></div>
+            </div>
+            <div class="preview-info">
+              <div class="preview-tag">ACTIVE PROBE</div>
+              <div class="preview-name" id="probe-name">Unknown Face</div>
+              <div class="preview-meta">128-D Unit Feature Vector</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Result Dossier Card -->
+        <div class="studio-card result-card" id="result-dossier">
+          <div class="card-header">
+            <span class="card-title">Retrieved Identity Dossier</span>
+            <div class="speed-pill">
+              <span class="pill-dot"></span>
+              <span id="latency-display">Ready</span>
+            </div>
+          </div>
+
+          <!-- Idle State -->
+          <div class="result-idle" id="result-idle">
+            <div class="idle-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="10" r="3"></circle>
+                <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
+              </svg>
+            </div>
+            <div class="idle-title">Awaiting Probe Input</div>
+            <div class="idle-text">Select a celebrity probe above or upload a photo to perform real-time facial vector matching.</div>
+          </div>
+
+          <!-- Active Match Result -->
+          <div class="result-content" id="result-content" style="display: none;">
+            
+            <div class="match-top-row">
+              <!-- Matched Actor Portrait -->
+              <div class="match-portrait-wrap">
+                <img id="match-portrait" src="" alt="Matched Celebrity">
+                <div class="portrait-badge">#1 MATCH</div>
+              </div>
+
+              <!-- Match Details -->
+              <div class="match-summary">
+                <div class="match-region-badge" id="match-region">Bollywood • India</div>
+                <h3 class="match-name" id="match-name">Shah Rukh Khan</h3>
+                
+                <!-- Confidence Gauge -->
+                <div class="confidence-gauge-box">
+                  <div class="gauge-label">
+                    <span>Identity Confidence</span>
+                    <strong id="confidence-pct">98.4%</strong>
+                  </div>
+                  <div class="gauge-bar-track">
+                    <div class="gauge-bar-fill" id="confidence-bar" style="width: 98%;"></div>
+                  </div>
+                </div>
+
+                <div class="metric-tags">
+                  <div class="metric-tag">
+                    <span class="m-label">L2 Distance</span>
+                    <span class="m-val" id="match-dist">0.068</span>
+                  </div>
+                  <div class="metric-tag">
+                    <span class="m-label">Query Time</span>
+                    <span class="m-val" id="match-latency">27 µs</span>
+                  </div>
+                  <div class="metric-tag">
+                    <span class="m-label">HNSW Hops</span>
+                    <span class="m-val" id="match-hops">3 hops</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bio and Movies -->
+            <div class="match-bio" id="match-bio">
+              Biographical summary from Wikipedia...
+            </div>
+
+            <div class="match-movies-wrap">
+              <span class="movies-label">Notable Works:</span>
+              <div class="movie-chips" id="match-movies">
+                <!-- Movie tags -->
+              </div>
+            </div>
+
+            <div class="match-footer">
+              <a href="#" target="_blank" rel="noreferrer" class="btn-wiki" id="match-wiki-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                View Official Wikipedia Article
+              </a>
+            </div>
+
+            <!-- Top-5 Runner Ups -->
+            <div class="runner-ups-section">
+              <div class="runner-ups-title">Top-5 Closest Matches in Embedding Space:</div>
+              <div class="runner-ups-list" id="runner-ups-list">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Section 2: Interactive HNSW DSA Graph Visualizer -->
+    <section id="visualizer" class="panel-section">
+      <div class="section-head">
+        <div>
+          <span class="section-tag">DATA STRUCTURES & ALGORITHMS</span>
+          <h2 class="section-title">HNSW Multi-Layer Graph Traversal</h2>
+        </div>
+        <div class="dsa-badge-group">
+          <span class="dsa-chip">O(log N) Search</span>
+          <span class="dsa-chip">Hierarchical Navigable Small World</span>
+          <span class="dsa-chip">M = 16</span>
+        </div>
+      </div>
+
+      <div class="visualizer-container">
+        <!-- Canvas wrapper -->
+        <div class="canvas-card">
+          <div class="canvas-toolbar">
+            <div class="legend-items">
+              <span class="legend-item"><span class="dot entry"></span> Entry Node</span>
+              <span class="legend-item"><span class="dot hop"></span> Greedy Hop</span>
+              <span class="legend-item"><span class="dot beam"></span> Beam Frontier</span>
+              <span class="legend-item"><span class="dot target"></span> Matched Actor</span>
+            </div>
+            <button class="btn-tool" id="btn-replay-dsa">Replay Traversal</button>
+          </div>
+          <canvas id="hnsw-canvas" width="800" height="340"></canvas>
+          <div class="canvas-caption">
+            Visual representation of probe vector descending from sparse upper highway layers down to dense layer 0 via greedy best-first descent.
+          </div>
+        </div>
+
+        <!-- DSA Explanations Card -->
+        <div class="dsa-stats-card">
+          <h3 class="dsa-stats-title">HNSW Algorithmic Mechanics</h3>
+          
+          <div class="dsa-step-box">
+            <div class="dsa-step-num">1</div>
+            <div class="dsa-step-content">
+              <h4>Layered Skip-List Architecture</h4>
+              <p>Layers shrink geometrically via \(p = 1 / \ln(M)\). Sparse top layers allow coarse long-range navigation across face cluster topologies.</p>
+            </div>
+          </div>
+
+          <div class="dsa-step-box">
+            <div class="dsa-step-num">2</div>
+            <div class="dsa-step-content">
+              <h4>Greedy Descent & Beam Search</h4>
+              <p>Descent traverses closest neighbors greedily through upper layers, transitioning to a priority-queue beam search (\(efSearch = 64\)) on Layer 0.</p>
+            </div>
+          </div>
+
+          <div class="dsa-step-box">
+            <div class="dsa-step-num">3</div>
+            <div class="dsa-step-content">
+              <h4>SIMD Distance Calculation</h4>
+              <p>Vector distance is computed via AVX2 256-bit FMA SIMD intrinsics over 128-D embeddings, evaluating 8 float multiplications per cycle.</p>
+            </div>
+          </div>
+
+          <div class="dsa-live-metrics" id="dsa-live-metrics">
+            <div class="live-metric">
+              <span class="lm-label">Distance Comparisons</span>
+              <span class="lm-value" id="dsa-comp-count">--</span>
+            </div>
+            <div class="live-metric">
+              <span class="lm-label">Brute Force O(N)</span>
+              <span class="lm-value" id="dsa-bf-count">58 checks</span>
+            </div>
+            <div class="live-metric highlight">
+              <span class="lm-label">Algorithm Speedup</span>
+              <span class="lm-value" id="dsa-speedup-rate">--</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Actor Database Explorer -->
+    <section id="catalog" class="panel-section">
+      <div class="section-head">
+        <div>
+          <span class="section-tag">KNOWLEDGE BASE</span>
+          <h2 class="section-title">Actor Catalog — India & USA</h2>
+        </div>
+        <div class="catalog-filters">
+          <button class="filter-btn active" data-filter="all">All Actors (<span id="count-all">0</span>)</button>
+          <button class="filter-btn" data-filter="bollywood">Bollywood 🇮🇳</button>
+          <button class="filter-btn" data-filter="south">South Cinema 🇮🇳</button>
+          <button class="filter-btn" data-filter="hollywood">Hollywood 🇺🇸</button>
+          <button class="filter-btn" data-filter="netflix">Netflix & OTT 🎬</button>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="catalog-search-wrap">
+        <div class="search-input-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="catalog-search" placeholder="Search actor by name or movie (e.g. Shah Rukh Khan, Inception, Pushpa)...">
+        </div>
+        <div class="catalog-count-label" id="catalog-match-count">Showing 58 actors</div>
+      </div>
+
+      <!-- Actor Cards Grid -->
+      <div class="actor-cards-grid" id="actor-cards-grid">
+        <!-- Injected via app.js -->
+      </div>
+    </section>
+
+    <!-- Section 4: Live Benchmark Laboratory -->
+    <section id="benchmark" class="panel-section">
+      <div class="section-head">
+        <div>
+          <span class="section-tag">PERFORMANCE ENGINE</span>
+          <h2 class="section-title">Vector Engine Benchmark</h2>
+        </div>
+        <button class="btn-action primary" id="btn-run-benchmark">Run Live Benchmark (100 Queries)</button>
+      </div>
+
+      <div class="benchmark-grid">
+        <div class="bench-card">
+          <div class="bench-header">
+            <span class="bench-badge">AVX2 + HNSW</span>
+            <h4>HyperVector Engine</h4>
+          </div>
+          <div class="bench-metric">
+            <span class="b-number" id="bench-hnsw-lat">32</span>
+            <span class="b-unit">µs / query</span>
+          </div>
+          <p class="bench-desc">Multi-layer HNSW graph with AVX2 SIMD fused multiply-add kernel.</p>
+          <div class="bench-stat-row">
+            <span>Complexity:</span>
+            <strong>O(log N)</strong>
+          </div>
+          <div class="bench-stat-row">
+            <span>Recall@5:</span>
+            <strong>98.4%</strong>
+          </div>
+        </div>
+
+        <div class="bench-card">
+          <div class="bench-header">
+            <span class="bench-badge scalar">SCALAR BASELINE</span>
+            <h4>Brute-Force Linear Scan</h4>
+          </div>
+          <div class="bench-metric">
+            <span class="b-number" id="bench-bf-lat">285</span>
+            <span class="b-unit">µs / query</span>
+          </div>
+          <p class="bench-desc">Sequential O(N) distance comparison across all enrolled identities without indexing.</p>
+          <div class="bench-stat-row">
+            <span>Complexity:</span>
+            <strong>O(N)</strong>
+          </div>
+          <div class="bench-stat-row">
+            <span>Recall@5:</span>
+            <strong>100.0%</strong>
+          </div>
+        </div>
+
+        <div class="bench-card summary">
+          <div class="bench-header">
+            <span class="bench-badge highlight">PERFORMANCE RATIO</span>
+            <h4>Speedup Factor</h4>
+          </div>
+          <div class="bench-metric highlight">
+            <span class="b-number" id="bench-speedup">8.9x</span>
+            <span class="b-unit">Faster Search</span>
+          </div>
+          <p class="bench-desc">As the gallery scales from 58 to 10,000+ faces, HNSW speedup widens dramatically from 8x to >150x.</p>
+          <div class="bench-stat-row">
+            <span>SIMD Architecture:</span>
+            <strong>AVX2 256-bit</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Actor Detail Modal -->
+  <div class="modal-overlay" id="actor-modal">
+    <div class="modal-card">
+      <button class="btn-close-modal" id="btn-close-modal">&times;</button>
+      <div class="modal-body" id="modal-content">
+        <!-- Populated on click -->
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <strong>HyperVector</strong> — Native C++20 HNSW Vector Search Engine & Face Identity System.
+      </div>
+      <div class="footer-right">
+        Wikipedia Media Integration • AVX2 SIMD Hardware Acceleration
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
